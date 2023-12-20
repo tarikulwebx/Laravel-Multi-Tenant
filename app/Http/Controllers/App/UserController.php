@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -15,7 +15,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::get();
+        $users = User::with('roles')->get();
 
         return view('app.users.index', ['users' => $users]);
     }
@@ -49,7 +49,7 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Tenant $tenant)
+    public function show(User $user)
     {
         //
     }
@@ -57,23 +57,36 @@ class UserController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Tenant $tenant)
+    public function edit(User $user)
     {
-        //
+        $roles = Role::get();
+
+        return view('app.users.edit', ['user' => $user, 'roles' => $roles]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Tenant $tenant)
+    public function update(Request $request, User $user)
     {
-        //
+        // validation
+        $validatedData = $request->validate([
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|email|max:255|unique:users,email,' . $user->id,
+            'roles' => 'required|array'
+        ]);
+
+        $user->update($validatedData);
+        $user->roles()->sync($request->input('roles'));
+
+
+        return redirect()->route('users.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Tenant $tenant)
+    public function destroy(User $user)
     {
         //
     }
